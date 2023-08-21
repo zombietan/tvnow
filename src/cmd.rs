@@ -1,6 +1,6 @@
 use crate::epg::{BsTv, Printer, TodayBsTv, TodayTv, Tv, WeekBsTv, WeekTv};
 use anyhow::{anyhow, Result};
-use colored::Colorize;
+use colored::*;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::io::{self, Write};
@@ -33,6 +33,9 @@ impl<T: Write, U: Write> Cli<T, U> {
     }
 
     fn run(&mut self, args: impl Iterator<Item = String>) -> Result<()> {
+        // ANSIエスケープコードに基づいて出力を正しく色付けしないWindows 10環境で必要
+        #[cfg(target_os = "windows")]
+        control::set_virtual_terminal(true).unwrap();
         let opt = self.get_opt(args)?;
         if opt.area {
             return {
