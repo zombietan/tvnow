@@ -7,13 +7,17 @@ edition = "2021"
 
 [dependencies]
 structopt = "0.3"
-colored = "2"
+colored = "2.0.4"
 chrono = "0.4.26"
 anyhow = "1.0"
 once_cell = "1.18.0"
-surf = "2.3.2"
 scraper = "0.17.1"
 
 [dependencies.async-std]
 version = "1.12.0"
 features = ["unstable"]
+
+[dependencies.surf]
+version = "2.3.2"
+default-features = false
+features = ["h1-client-rustls"]
