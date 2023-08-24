@@ -22,8 +22,8 @@ impl<T: Write, U: Write> Cli<T, U> {
         }
     }
 
-    pub fn execute(&mut self, args: impl Iterator<Item = String>) -> ExitCode {
-        match self.run(args) {
+    pub async fn execute(&mut self, args: impl Iterator<Item = String>) -> ExitCode {
+        match self.run(args).await {
             Ok(_) => ExitCode::Normal,
             Err(e) => {
                 writeln!(self.err_stream, "{}", e).unwrap();
@@ -32,7 +32,7 @@ impl<T: Write, U: Write> Cli<T, U> {
         }
     }
 
-    fn run(&mut self, args: impl Iterator<Item = String>) -> Result<()> {
+    async fn run(&mut self, args: impl Iterator<Item = String>) -> Result<()> {
         // ANSIエスケープコードに基づいて出力を正しく色付けしないWindows 10環境で必要
         #[cfg(target_os = "windows")]
         control::set_virtual_terminal(true).unwrap();
@@ -51,7 +51,8 @@ impl<T: Write, U: Write> Cli<T, U> {
                 area_id = id;
             }
         }
-        self.get_tv_printer(area_id, &opt)?
+        self.get_tv_printer(area_id, &opt)
+            .await?
             .print(&mut self.out_stream);
         Ok(())
     }
@@ -67,11 +68,11 @@ impl<T: Write, U: Write> Cli<T, U> {
             .ok_or_else(|| anyhow!("{} is not in the area", default.bright_yellow()))
     }
 
-    fn get_tv_printer<W>(&self, area_id: u8, opt: &Opt) -> Result<Box<dyn Printer<W>>>
+    async fn get_tv_printer<W>(&self, area_id: u8, opt: &Opt) -> Result<Box<dyn Printer<W>>>
     where
         W: Write,
     {
-        create_printer(area_id, opt)
+        create_printer(area_id, opt).await
     }
 
     fn print_areas(&mut self) {
@@ -105,14 +106,14 @@ struct Opt {
     area_name: Option<String>,
 }
 
-fn create_printer<T: Write>(area: u8, opt: &Opt) -> Result<Box<dyn Printer<T>>> {
+async fn create_printer<T: Write>(area: u8, opt: &Opt) -> Result<Box<dyn Printer<T>>> {
     match area {
-        0 if opt.today => TodayBsTv::init(),
-        0 if opt.week => WeekBsTv::init(),
-        0 => BsTv::init(),
-        i if opt.today => TodayTv::init(i),
-        i if opt.week => WeekTv::init(i),
-        i => Tv::init(i),
+        0 if opt.today => TodayBsTv::init().await,
+        0 if opt.week => WeekBsTv::init().await,
+        0 => BsTv::init().await,
+        i if opt.today => TodayTv::init(i).await,
+        i if opt.week => WeekTv::init(i).await,
+        i => Tv::init(i).await,
     }
 }
 
@@ -198,56 +199,56 @@ mod tests {
     use super::*;
     use colored::control::set_override;
 
-    #[test]
-    fn test_tv_works() {
+    #[async_std::test]
+    async fn test_tv_works() {
         let mut cli = Cli::new(vec![], vec![]);
         let args = vec!["tvnow".to_string(), "-a".to_string()];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Normal);
+        assert_eq!(result.await, ExitCode::Normal);
 
         let args = vec!["tvnow".to_string(), "osaka".to_string()];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Normal);
+        assert_eq!(result.await, ExitCode::Normal);
     }
-    #[test]
-    fn test_bs_works() {
+    #[async_std::test]
+    async fn test_bs_works() {
         let mut cli = Cli::new(vec![], vec![]);
         let args = vec!["tvnow".to_string(), "bs".to_string()];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Normal);
+        assert_eq!(result.await, ExitCode::Normal);
     }
-    #[test]
-    fn test_today_works() {
+    #[async_std::test]
+    async fn test_today_works() {
         let mut cli = Cli::new(vec![], vec![]);
         let args = vec!["tvnow".to_string(), "tokyo".to_string(), "-t".to_string()];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Normal);
+        assert_eq!(result.await, ExitCode::Normal);
 
         let args = vec!["tvnow".to_string(), "bs".to_string(), "--today".to_string()];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Normal);
+        assert_eq!(result.await, ExitCode::Normal);
     }
-    #[test]
-    fn test_week_works() {
+    #[async_std::test]
+    async fn test_week_works() {
         let mut cli = Cli::new(vec![], vec![]);
         let args = vec!["tvnow".to_string(), "tokyo".to_string(), "-w".to_string()];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Normal);
+        assert_eq!(result.await, ExitCode::Normal);
 
         let args = vec!["tvnow".to_string(), "bs".to_string(), "--week".to_string()];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Normal);
+        assert_eq!(result.await, ExitCode::Normal);
     }
-    #[test]
-    fn test_flag_error_works() {
+    #[async_std::test]
+    async fn test_flag_error_works() {
         let mut cli = Cli::new(vec![], vec![]);
         let args = vec!["tvnow".to_string(), "tokyo".to_string(), "-wt".to_string()];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Abnormal);
+        assert_eq!(result.await, ExitCode::Abnormal);
 
         let args = vec!["tvnow".to_string(), "tokyo".to_string(), "-1".to_string()];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Abnormal);
+        assert_eq!(result.await, ExitCode::Abnormal);
 
         let args = vec![
             "tvnow".to_string(),
@@ -255,22 +256,22 @@ mod tests {
             "osaka".to_string(),
         ];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Abnormal);
+        assert_eq!(result.await, ExitCode::Abnormal);
     }
-    #[test]
+    #[async_std::test]
     #[ignore]
     // cargo test -- --ignored --test-threads=1
-    fn test_env_default_area_works() {
+    async fn test_env_default_area_works() {
         std::env::set_var(ENV_KEY, "hogehoge");
         let mut cli = Cli::new(vec![], vec![]);
         let args = vec!["tvnow".to_string()];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Abnormal);
+        assert_eq!(result.await, ExitCode::Abnormal);
         std::env::set_var(ENV_KEY, "tokyo");
     }
-    #[test]
+    #[async_std::test]
     #[ignore]
-    fn test_env_default_area_error_message_works() {
+    async fn test_env_default_area_error_message_works() {
         // カラー化無効
         set_override(false);
         std::env::set_var(ENV_KEY, "fugafuga");
@@ -279,14 +280,14 @@ mod tests {
         let mut cli = Cli::new(&mut out, &mut err);
         let args = vec!["tvnow".to_string()];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Abnormal);
+        assert_eq!(result.await, ExitCode::Abnormal);
         let err_string = String::from_utf8(err).unwrap();
         assert_eq!(err_string, "fugafuga is not in the area\n");
         std::env::set_var(ENV_KEY, "tokyo");
     }
 
-    #[test]
-    fn test_tv_tokyo_channel_number_works() {
+    #[async_std::test]
+    async fn test_tv_tokyo_channel_number_works() {
         //　カラー化無効
         set_override(false);
         let mut out: Vec<u8> = vec![];
@@ -295,7 +296,7 @@ mod tests {
 
         let args = vec!["tvnow".to_string(), "tokyo".to_string()];
         let result = cli.execute(args.into_iter());
-        assert_eq!(result, ExitCode::Normal);
+        assert_eq!(result.await, ExitCode::Normal);
 
         let out_string = String::from_utf8(out).unwrap();
         // 東京のチャンネル番号

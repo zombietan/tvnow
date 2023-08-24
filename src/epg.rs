@@ -19,9 +19,9 @@ pub struct Tv {
 }
 
 impl Tv {
-    pub fn init<T: Write>(id: u8) -> Result<Box<dyn Printer<T>>> {
+    pub async fn init<T: Write>(id: u8) -> Result<Box<dyn Printer<T>>> {
         let url = format!("https://bangumi.org/epg/td?ggm_group_id={}", id);
-        let html = get_html(&url)?;
+        let html = get_html(&url).await?;
         let printer = Box::new(Tv { epg_doc: html });
 
         Ok(printer)
@@ -63,9 +63,9 @@ pub struct TodayTv {
 }
 
 impl TodayTv {
-    pub fn init<T: Write>(id: u8) -> Result<Box<dyn Printer<T>>> {
+    pub async fn init<T: Write>(id: u8) -> Result<Box<dyn Printer<T>>> {
         let url = format!("https://bangumi.org/epg/td?ggm_group_id={}", id);
-        let html = get_html(&url)?;
+        let html = get_html(&url).await?;
         let printer = Box::new(TodayTv { epg_doc: html });
 
         Ok(printer)
@@ -119,7 +119,7 @@ pub struct WeekTv {
 }
 
 impl WeekTv {
-    pub fn init<T: Write>(id: u8) -> Result<Box<dyn Printer<T>>> {
+    pub async fn init<T: Write>(id: u8) -> Result<Box<dyn Printer<T>>> {
         let mut datetime = Local::now();
         if datetime.hour() < TV_GUIDE_START_TIME {
             datetime = Local::now() + Duration::days(-1);
@@ -135,7 +135,7 @@ impl WeekTv {
             *index = url;
             datetime += Duration::days(1);
         }
-        let htmls = async_get_htmls(urls.to_vec())?;
+        let htmls = async_get_htmls(urls.to_vec()).await?;
         let printer = Box::new(WeekTv { epg_docs: htmls });
 
         Ok(printer)
@@ -186,9 +186,9 @@ pub struct BsTv {
 }
 
 impl BsTv {
-    pub fn init<T: Write>() -> Result<Box<dyn Printer<T>>> {
+    pub async fn init<T: Write>() -> Result<Box<dyn Printer<T>>> {
         let url = "https://bangumi.org/epg/bs";
-        let html = get_html(url)?;
+        let html = get_html(url).await?;
 
         let printer = Box::new(BsTv { epg_doc: html });
 
@@ -231,9 +231,9 @@ pub struct TodayBsTv {
 }
 
 impl TodayBsTv {
-    pub fn init<T: Write>() -> Result<Box<dyn Printer<T>>> {
+    pub async fn init<T: Write>() -> Result<Box<dyn Printer<T>>> {
         let url = "https://bangumi.org/epg/bs";
-        let html = get_html(url)?;
+        let html = get_html(url).await?;
 
         let printer = Box::new(TodayBsTv { epg_doc: html });
 
@@ -288,7 +288,7 @@ pub struct WeekBsTv {
 }
 
 impl WeekBsTv {
-    pub fn init<T: Write>() -> Result<Box<dyn Printer<T>>> {
+    pub async fn init<T: Write>() -> Result<Box<dyn Printer<T>>> {
         let mut datetime = Local::now();
         if datetime.hour() < TV_GUIDE_START_TIME {
             datetime = Local::now() + Duration::days(-1);
@@ -301,7 +301,7 @@ impl WeekBsTv {
             *index = url;
             datetime += Duration::days(1);
         }
-        let htmls = async_get_htmls(urls.to_vec())?;
+        let htmls = async_get_htmls(urls.to_vec()).await?;
         let printer = Box::new(WeekBsTv { epg_docs: htmls });
 
         Ok(printer)
@@ -347,8 +347,8 @@ impl<T: Write> Printer<T> for WeekBsTv {
     }
 }
 
-fn get_html(url: &str) -> Result<Html> {
-    let s = task::block_on(get_response_body_string(url))?;
+async fn get_html(url: &str) -> Result<Html> {
+    let s = get_response_body_string(url).await?;
     let html = Html::parse_document(&s);
     Ok(html)
 }
@@ -379,8 +379,8 @@ async fn multiple_requests(urls: Vec<String>) -> Vec<Result<String>> {
     body_strings
 }
 
-fn async_get_htmls(urls: Vec<String>) -> Result<Vec<Html>> {
-    let results = task::block_on(multiple_requests(urls));
+async fn async_get_htmls(urls: Vec<String>) -> Result<Vec<Html>> {
+    let results = multiple_requests(urls).await;
     let res_bodies = results.into_iter().collect::<Result<Vec<String>>>()?;
     let htmls = res_bodies
         .iter()

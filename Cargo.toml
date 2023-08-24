@@ -15,7 +15,7 @@ scraper = "0.17.1"
 
 [dependencies.async-std]
 version = "1.12.0"
-features = ["unstable"]
+features = ["unstable", "attributes"]
 
 [dependencies.surf]
 version = "2.3.2"
