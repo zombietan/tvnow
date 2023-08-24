@@ -381,8 +381,8 @@ async fn multiple_requests(urls: Vec<String>) -> Vec<Result<String>> {
 
 fn async_get_htmls(urls: Vec<String>) -> Result<Vec<Html>> {
     let results = task::block_on(multiple_requests(urls));
-    let res_bodys = results.into_iter().collect::<Result<Vec<String>>>()?;
-    let htmls = res_bodys
+    let res_bodies = results.into_iter().collect::<Result<Vec<String>>>()?;
+    let htmls = res_bodies
         .iter()
         .map(|b| Html::parse_document(b))
         .collect::<Vec<Html>>();
