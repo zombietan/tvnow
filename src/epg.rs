@@ -3,6 +3,7 @@ use async_std::task;
 use chrono::prelude::*;
 use chrono::Duration;
 use colored::{Color, Colorize};
+use htmlize::unescape;
 use scraper::{Html, Selector};
 use std::io::{self, Write};
 
@@ -48,8 +49,13 @@ impl<T: Write> Printer<T> for Tv {
             match ul.select(&current_selector).next() {
                 Some(current) => {
                     if let Some(title) = current.select(&title_selector).next() {
-                        writeln!(buf, "{} {}", channels[i].color(TVCOLOR), title.inner_html())
-                            .unwrap();
+                        writeln!(
+                            buf,
+                            "{} {}",
+                            channels[i].color(TVCOLOR),
+                            unescape(title.inner_html())
+                        )
+                        .unwrap();
                     }
                 }
                 None => writeln!(buf, "{} 現在放送していません", channels[i]).unwrap(),
@@ -105,7 +111,7 @@ impl<T: Write> Printer<T> for TodayTv {
                         start_minutes,
                         end_hours,
                         end_minutes,
-                        title.inner_html()
+                        unescape(title.inner_html())
                     )
                     .unwrap();
                 }
@@ -171,7 +177,7 @@ impl<T: Write> Printer<T> for WeekTv {
                             channels[i],
                             start.format("%a %R"),
                             end.format("%a %R"),
-                            title.inner_html()
+                            unescape(title.inner_html())
                         )
                         .unwrap();
                     }
@@ -216,8 +222,13 @@ impl<T: Write> Printer<T> for BsTv {
             match ul.select(&current_selector).next() {
                 Some(current) => {
                     if let Some(title) = current.select(&title_selector).next() {
-                        writeln!(buf, "{} {}", channels[i].color(BSCOLOR), title.inner_html())
-                            .unwrap();
+                        writeln!(
+                            buf,
+                            "{} {}",
+                            channels[i].color(BSCOLOR),
+                            unescape(title.inner_html())
+                        )
+                        .unwrap();
                     }
                 }
                 None => writeln!(buf, "{} 現在放送していません", channels[i]).unwrap(),
@@ -274,7 +285,7 @@ impl<T: Write> Printer<T> for TodayBsTv {
                         start_minutes,
                         end_hours,
                         end_minutes,
-                        title.inner_html()
+                        unescape(title.inner_html())
                     )
                     .unwrap();
                 }
@@ -337,7 +348,7 @@ impl<T: Write> Printer<T> for WeekBsTv {
                             channels[i],
                             start.format("%a %R"),
                             end.format("%a %R"),
-                            title.inner_html()
+                            unescape(title.inner_html())
                         )
                         .unwrap();
                     }
@@ -366,9 +377,9 @@ async fn get_response_body_string(url: &str) -> Result<String> {
 async fn multiple_requests(urls: Vec<String>) -> Vec<Result<String>> {
     let mut handles = vec![];
     for url in urls {
-        handles.push(task::spawn_local(async move {
-            get_response_body_string(&url).await
-        }));
+        handles.push(
+            task::spawn_local(async move { get_response_body_string(&url).await })
+        );
     }
 
     let mut body_strings = vec![];

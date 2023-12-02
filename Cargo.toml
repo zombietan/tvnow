@@ -12,6 +12,7 @@ chrono = "0.4.26"
 anyhow = "1.0"
 once_cell = "1.18.0"
 scraper = "0.17.1"
+htmlize = { version = "1.0.3", features = ["unescape"] }
 
 [dependencies.async-std]
 version = "1.12.0"
