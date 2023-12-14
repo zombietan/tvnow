@@ -1,4 +1,6 @@
-use crate::epg::{BsTv, Printer, TodayBsTv, TodayTv, Tv, WeekBsTv, WeekTv};
+use crate::epg::{
+    BsTv, CsTv, Printer, TodayBsTv, TodayCsTv, TodayTv, Tv, WeekBsTv, WeekCsTv, WeekTv,
+};
 use anyhow::{anyhow, Result};
 use colored::*;
 use once_cell::sync::Lazy;
@@ -82,6 +84,7 @@ impl<T: Write, U: Write> Cli<T, U> {
         areas.iter().for_each(|&a| {
             match a {
                 "bs" => writeln!(buf, "{}", "bs".bright_yellow()).unwrap(),
+                "cs" => writeln!(buf, "{}", "cs".bright_yellow()).unwrap(),
                 _ => writeln!(buf, "{}", a).unwrap(),
             };
         });
@@ -111,6 +114,9 @@ async fn create_printer<T: Write>(area: u8, opt: &Opt) -> Result<Box<dyn Printer
         0 if opt.today => TodayBsTv::init().await,
         0 if opt.week => WeekBsTv::init().await,
         0 => BsTv::init().await,
+        255 if opt.today => TodayCsTv::init().await,
+        255 if opt.week => WeekCsTv::init().await,
+        255 => CsTv::init().await,
         i if opt.today => TodayTv::init(i).await,
         i if opt.week => WeekTv::init(i).await,
         i => Tv::init(i).await,
@@ -131,6 +137,7 @@ impl ExitCode {
 
 static AREA_MAP: Lazy<HashMap<&'static str, u8>> = Lazy::new(|| {
     let m = [
+        ("cs", 255),
         ("bs", 0),
         ("sapporo", 1),
         ("hakodate", 8),
