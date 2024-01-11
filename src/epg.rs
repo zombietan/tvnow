@@ -168,8 +168,9 @@ impl<T: Write> Printer<T> for WeekTv {
                 for li in ul.select(&future_selector) {
                     let start = li.value().attr("s").unwrap();
                     let end = li.value().attr("e").unwrap();
-                    let start = Local.datetime_from_str(start, "%Y%m%d%H%M").unwrap();
-                    let end = Local.datetime_from_str(end, "%Y%m%d%H%M").unwrap();
+                    let start = NaiveDateTime::parse_from_str(start, "%Y%m%d%H%M").unwrap();
+                    let end = NaiveDateTime::parse_from_str(end, "%Y%m%d%H%M").unwrap();
+
                     if let Some(title) = li.select(&title_selector).next() {
                         writeln!(
                             buf,
@@ -339,8 +340,8 @@ impl<T: Write> Printer<T> for WeekBsTv {
                 for li in ul.select(&future_selector) {
                     let start = li.value().attr("s").unwrap();
                     let end = li.value().attr("e").unwrap();
-                    let start = Local.datetime_from_str(start, "%Y%m%d%H%M").unwrap();
-                    let end = Local.datetime_from_str(end, "%Y%m%d%H%M").unwrap();
+                    let start = NaiveDateTime::parse_from_str(start, "%Y%m%d%H%M").unwrap();
+                    let end = NaiveDateTime::parse_from_str(end, "%Y%m%d%H%M").unwrap();
                     if let Some(title) = li.select(&title_selector).next() {
                         writeln!(
                             buf,
