@@ -20,8 +20,6 @@ features = ["unstable", "attributes"]
 
 [dependencies.surf]
 version = "2.3.2"
-default-features = false
-features = ["h1-client-rustls"]
 
 [profile.release]
 strip = true
