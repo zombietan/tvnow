@@ -3,9 +3,11 @@ use async_std::task;
 use chrono::prelude::*;
 use chrono::Duration;
 use colored::{Color, Colorize};
+use futures::future::join_all;
 use htmlize::unescape;
 use scraper::{Html, Selector};
 use std::io::{self, Write};
+use std::time::Instant;
 use surf::{Client, Config};
 
 const TV_GUIDE_START_TIME: u32 = 5;
@@ -16,7 +18,7 @@ const CSCOLOR: Color = Color::TrueColor {
     g: 165,
     b: 0,
 };
-const HTTP_KEEP_ALIVE: bool = false;
+const HTTP_KEEP_ALIVE: bool = true;
 
 pub trait Printer<T: Write> {
     fn print(&self, w: T);
@@ -536,19 +538,29 @@ impl<T: Write> Printer<T> for WeekCsTv {
     }
 }
 
-async fn get_html(url: &str) -> Result<Html> {
+async fn get_html(url: impl AsRef<str>) -> Result<Html> {
     let s = get_response_body_string(url).await?;
     let html = Html::parse_document(&s);
     Ok(html)
 }
 
-async fn get_response_body_string(url: &str) -> Result<String> {
-    let client: Client = Config::new()
-        .set_http_keep_alive(HTTP_KEEP_ALIVE)
-        .try_into()?;
-    let req = surf::get(url);
-    let rbs = client
-        .recv_string(req)
+// async fn get_response_body_string(url: impl AsRef<str>) -> Result<String> {
+//     let client: Client = Config::new()
+//         .set_http_keep_alive(HTTP_KEEP_ALIVE)
+//         .try_into()?;
+//     let req = surf::get(url);
+//     let rbs = client
+//         .recv_string(req)
+//         .await
+//         .map_err(|err| anyhow!(err))
+//         .context("Failed to fetch from bangumi.org")?;
+
+//     Ok(rbs)
+// }
+
+async fn get_response_body_string(url: impl AsRef<str>) -> Result<String> {
+    let rbs = surf::get(url)
+        .recv_string()
         .await
         .map_err(|err| anyhow!(err))
         .context("Failed to fetch from bangumi.org")?;
@@ -556,25 +568,23 @@ async fn get_response_body_string(url: &str) -> Result<String> {
     Ok(rbs)
 }
 
-async fn multiple_requests(urls: Vec<String>) -> Vec<Result<String>> {
-    let mut handles = vec![];
-    for url in urls {
-        handles.push(task::spawn_local(async move {
-            get_response_body_string(&url).await
-        }));
-    }
 
-    let mut body_strings = vec![];
-    for handle in handles {
-        body_strings.push(handle.await);
-    }
+async fn multiple_requests(urls: Vec<String>) -> Result<Vec<String>> {
+    let requests = urls.into_iter().map(|url| get_response_body_string(url));
 
-    body_strings
+    let responses = join_all(requests).await;
+
+    let body_strings = responses.into_iter().collect::<Result<Vec<String>>>()?;
+
+    Ok(body_strings)
 }
 
+
 async fn async_get_htmls(urls: Vec<String>) -> Result<Vec<Html>> {
-    let results = multiple_requests(urls).await;
-    let res_bodies = results.into_iter().collect::<Result<Vec<String>>>()?;
+    let start = Instant::now();
+    let res_bodies = multiple_requests(urls).await?;
+    let elapsed = start.elapsed();
+    println!("Elapsed time: {:.2?}", elapsed);
     let htmls = res_bodies
         .iter()
         .map(|b| Html::parse_document(b))
