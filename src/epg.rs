@@ -1,14 +1,15 @@
 use anyhow::{anyhow, Context, Result};
-use async_std::task;
+
 use chrono::prelude::*;
 use chrono::Duration;
 use colored::{Color, Colorize};
 use futures::future::join_all;
 use htmlize::unescape;
 use scraper::{Html, Selector};
+use surf::Client;
+use surf::Config;
 use std::io::{self, Write};
 use std::time::Instant;
-use surf::{Client, Config};
 
 const TV_GUIDE_START_TIME: u32 = 5;
 const TVCOLOR: Color = Color::BrightYellow;
@@ -544,19 +545,20 @@ async fn get_html(url: impl AsRef<str>) -> Result<Html> {
     Ok(html)
 }
 
-// async fn get_response_body_string(url: impl AsRef<str>) -> Result<String> {
-//     let client: Client = Config::new()
-//         .set_http_keep_alive(HTTP_KEEP_ALIVE)
-//         .try_into()?;
-//     let req = surf::get(url);
-//     let rbs = client
-//         .recv_string(req)
-//         .await
-//         .map_err(|err| anyhow!(err))
-//         .context("Failed to fetch from bangumi.org")?;
+#[allow(dead_code)]
+async fn _get_response_body_string(url: impl AsRef<str>) -> Result<String> {
+    let client: Client = Config::new()
+        .set_http_keep_alive(HTTP_KEEP_ALIVE)
+        .try_into()?;
+    let req = surf::get(url);
+    let rbs = client
+        .recv_string(req)
+        .await
+        .map_err(|err| anyhow!(err))
+        .context("Failed to fetch from bangumi.org")?;
 
-//     Ok(rbs)
-// }
+    Ok(rbs)
+}
 
 async fn get_response_body_string(url: impl AsRef<str>) -> Result<String> {
     let rbs = surf::get(url)
@@ -568,9 +570,8 @@ async fn get_response_body_string(url: impl AsRef<str>) -> Result<String> {
     Ok(rbs)
 }
 
-
 async fn multiple_requests(urls: Vec<String>) -> Result<Vec<String>> {
-    let requests = urls.into_iter().map(|url| get_response_body_string(url));
+    let requests = urls.iter().map(get_response_body_string);
 
     let responses = join_all(requests).await;
 
@@ -578,7 +579,6 @@ async fn multiple_requests(urls: Vec<String>) -> Result<Vec<String>> {
 
     Ok(body_strings)
 }
-
 
 async fn async_get_htmls(urls: Vec<String>) -> Result<Vec<Html>> {
     let start = Instant::now();
