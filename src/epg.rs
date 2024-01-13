@@ -6,6 +6,7 @@ use colored::{Color, Colorize};
 use htmlize::unescape;
 use scraper::{Html, Selector};
 use std::io::{self, Write};
+use std::time::Instant;
 use surf::{Client, Config};
 
 const TV_GUIDE_START_TIME: u32 = 5;
@@ -580,4 +581,17 @@ async fn async_get_htmls(urls: Vec<String>) -> Result<Vec<Html>> {
         .map(|b| Html::parse_document(b))
         .collect::<Vec<Html>>();
     Ok(htmls)
+}
+
+#[allow(dead_code)]
+async fn print_execution_time<F, Fut, T, U>(arg: U, f: F) -> T
+where
+    F: Fn(U) -> Fut,
+    Fut: std::future::Future<Output = T>,
+{
+    let start = Instant::now();
+    let result = f(arg).await;
+    let elapsed = start.elapsed();
+    println!("Elapsed time: {:.2?}", elapsed);
+    result
 }
