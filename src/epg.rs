@@ -6,10 +6,10 @@ use colored::{Color, Colorize};
 use futures::future::join_all;
 use htmlize::unescape;
 use scraper::{Html, Selector};
-use surf::Client;
-use surf::Config;
 use std::io::{self, Write};
 use std::time::Instant;
+use surf::middleware::{Middleware, Next};
+use surf::{Client, Config, Request, Response, Result as SurfResult};
 
 const TV_GUIDE_START_TIME: u32 = 5;
 const TVCOLOR: Color = Color::BrightYellow;
@@ -590,4 +590,16 @@ async fn async_get_htmls(urls: Vec<String>) -> Result<Vec<Html>> {
         .map(|b| Html::parse_document(b))
         .collect::<Vec<Html>>();
     Ok(htmls)
+}
+
+struct HttpRequestElapsedTimer;
+
+#[surf::utils::async_trait]
+impl Middleware for HttpRequestElapsedTimer {
+    async fn handle(&self, req: Request, client: Client, next: Next<'_>) -> SurfResult<Response> {
+        let now = Instant::now();
+        let res = next.run(req, client).await?;
+        println!("request completed {:?}", now.elapsed());
+        Ok(res)
+    }
 }
