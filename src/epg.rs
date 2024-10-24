@@ -560,9 +560,9 @@ async fn get_response_body_string(url: &str) -> Result<String> {
 async fn multiple_requests(urls: Vec<String>) -> Vec<Result<String>> {
     let mut handles = vec![];
     for url in urls {
-        handles.push(task::spawn_local(async move {
-            get_response_body_string(&url).await
-        }));
+        handles.push(task::spawn(
+            async move { get_response_body_string(&url).await },
+        ));
     }
 
     let mut body_strings = vec![];
