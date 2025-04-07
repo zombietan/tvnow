@@ -572,7 +572,7 @@ async fn get_response_body_string<T: AsRef<str>>(url: T) -> Result<String> {
 }
 
 async fn multiple_requests<T: AsRef<str>>(urls: &[T]) -> Result<Vec<String>> {
-    let requests = urls.iter().map(|s| get_response_body_string(s));
+    let requests = urls.iter().map(get_response_body_string);
 
     let responses = join_all(requests).await;
 
