@@ -550,6 +550,7 @@ async fn _get_response_body_string(url: impl AsRef<str>) -> Result<String> {
     let client: Client = Config::new()
         .set_http_keep_alive(HTTP_KEEP_ALIVE)
         .try_into()?;
+    let client = client.with(HttpRequestElapsedTimer);
     let req = surf::get(url);
     let rbs = client
         .recv_string(req)
@@ -581,10 +582,7 @@ async fn multiple_requests(urls: Vec<String>) -> Result<Vec<String>> {
 }
 
 async fn async_get_htmls(urls: Vec<String>) -> Result<Vec<Html>> {
-    let start = Instant::now();
     let res_bodies = multiple_requests(urls).await?;
-    let elapsed = start.elapsed();
-    println!("Elapsed time: {:.2?}", elapsed);
     let htmls = res_bodies
         .iter()
         .map(|b| Html::parse_document(b))
