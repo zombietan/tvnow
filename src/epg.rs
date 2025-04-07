@@ -151,7 +151,7 @@ impl WeekTv {
             *index = url;
             datetime += Duration::days(1);
         }
-        let htmls = async_get_htmls(urls.to_vec()).await?;
+        let htmls = async_get_htmls(&urls).await?;
         let printer = Box::new(WeekTv { epg_docs: htmls });
 
         Ok(printer)
@@ -322,7 +322,7 @@ impl WeekBsTv {
             *index = url;
             datetime += Duration::days(1);
         }
-        let htmls = async_get_htmls(urls.to_vec()).await?;
+        let htmls = async_get_htmls(&urls).await?;
         let printer = Box::new(WeekBsTv { epg_docs: htmls });
 
         Ok(printer)
@@ -493,7 +493,7 @@ impl WeekCsTv {
             *index = url;
             datetime += Duration::days(1);
         }
-        let htmls = async_get_htmls(urls.to_vec()).await?;
+        let htmls = async_get_htmls(&urls).await?;
         let printer = Box::new(WeekCsTv { epg_docs: htmls });
 
         Ok(printer)
@@ -539,14 +539,14 @@ impl<T: Write> Printer<T> for WeekCsTv {
     }
 }
 
-async fn get_html(url: impl AsRef<str>) -> Result<Html> {
+async fn get_html<T: AsRef<str>>(url: T) -> Result<Html> {
     let s = get_response_body_string(url).await?;
     let html = Html::parse_document(&s);
     Ok(html)
 }
 
 #[allow(dead_code)]
-async fn _get_response_body_string(url: impl AsRef<str>) -> Result<String> {
+async fn _get_response_body_string<T: AsRef<str>>(url: T) -> Result<String> {
     let client: Client = Config::new()
         .set_http_keep_alive(HTTP_KEEP_ALIVE)
         .try_into()?;
@@ -561,7 +561,7 @@ async fn _get_response_body_string(url: impl AsRef<str>) -> Result<String> {
     Ok(rbs)
 }
 
-async fn get_response_body_string(url: impl AsRef<str>) -> Result<String> {
+async fn get_response_body_string<T: AsRef<str>>(url: T) -> Result<String> {
     let rbs = surf::get(url)
         .recv_string()
         .await
@@ -571,8 +571,8 @@ async fn get_response_body_string(url: impl AsRef<str>) -> Result<String> {
     Ok(rbs)
 }
 
-async fn multiple_requests(urls: Vec<String>) -> Result<Vec<String>> {
-    let requests = urls.iter().map(get_response_body_string);
+async fn multiple_requests<T: AsRef<str>>(urls: &[T]) -> Result<Vec<String>> {
+    let requests = urls.iter().map(|s| get_response_body_string(s));
 
     let responses = join_all(requests).await;
 
@@ -581,7 +581,7 @@ async fn multiple_requests(urls: Vec<String>) -> Result<Vec<String>> {
     Ok(body_strings)
 }
 
-async fn async_get_htmls(urls: Vec<String>) -> Result<Vec<Html>> {
+async fn async_get_htmls<T: AsRef<str>>(urls: &[T]) -> Result<Vec<Html>> {
     let res_bodies = multiple_requests(urls).await?;
     let htmls = res_bodies
         .iter()
