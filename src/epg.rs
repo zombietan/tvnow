@@ -592,6 +592,7 @@ async fn async_get_htmls<T: AsRef<str>>(urls: &[T]) -> Result<Vec<Html>> {
 
 struct HttpRequestElapsedTimer;
 
+// HTTPリクエストの処理時間を計測し出力する
 #[surf::utils::async_trait]
 impl Middleware for HttpRequestElapsedTimer {
     async fn handle(&self, req: Request, client: Client, next: Next<'_>) -> SurfResult<Response> {
