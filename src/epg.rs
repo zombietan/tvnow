@@ -575,7 +575,6 @@ async fn multiple_requests<T: AsRef<str>>(urls: &[T]) -> Result<Vec<String>> {
     let client: Client = Config::new()
         .set_http_keep_alive(HTTP_KEEP_ALIVE)
         .try_into()?;
-    let client = client.with(HttpRequestElapsedTimer);
     let requests = urls.iter().map(async |url| {
         let req = surf::get(url);
         client
