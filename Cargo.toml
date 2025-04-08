@@ -7,15 +7,15 @@ edition = "2021"
 
 [dependencies]
 structopt = "0.3"
-colored = "2.0.4"
+colored = "3.0.0"
 chrono = "0.4"
 anyhow = "1.0"
-scraper = "0.17.1"
-htmlize = { version = "1.0.3", features = ["unescape"] }
-futures = "0.3.30"
+scraper = "0.23.1"
+htmlize = { version = "1.0.5", features = ["unescape"] }
+futures = "0.3.31"
 
 [dependencies.async-std]
-version = "1.12.0"
+version = "1.13.1"
 features = ["unstable", "attributes"]
 
 [dependencies.surf]
