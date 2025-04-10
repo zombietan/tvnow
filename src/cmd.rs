@@ -3,9 +3,9 @@ use crate::epg::{
 };
 use anyhow::{anyhow, Result};
 use colored::*;
+use std::cell::LazyCell;
 use std::collections::HashMap;
 use std::io::{self, Write};
-use std::sync::LazyLock;
 use std::{env, process};
 use structopt::{clap, StructOpt};
 
@@ -135,7 +135,7 @@ impl ExitCode {
     }
 }
 
-static AREA_MAP: LazyLock<HashMap<&'static str, u8>> = LazyLock::new(|| {
+const AREA_MAP: LazyCell<HashMap<&'static str, u8>> = LazyCell::new(|| {
     let m = [
         ("cs", 255),
         ("bs", 0),
@@ -194,8 +194,7 @@ static AREA_MAP: LazyLock<HashMap<&'static str, u8>> = LazyLock::new(|| {
         ("okinawa", 134),
         ("kitakyushu", 120),
     ]
-    .iter()
-    .cloned()
+    .into_iter()
     .collect();
     m
 });
