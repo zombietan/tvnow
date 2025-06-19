@@ -99,7 +99,7 @@ struct Opt {
     #[structopt(short, long, conflicts_with_all(&["week", "area"]))]
     today: bool,
     /// Prints a week program
-    #[structopt(short, long, conflicts_with_all(&["after", "area"]))]
+    #[structopt(short, long, conflicts_with_all(&["today", "area"]))]
     week: bool,
     /// Prints area list
     #[structopt(short, long, conflicts_with_all(&["today", "week"]))]
